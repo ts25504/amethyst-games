@@ -15,8 +15,6 @@ impl SimpleState for Pong {
         let world = _data.world;
         let sprite_sheet_handle = load_sprite_sheet(world);
 
-        world.register::<Paddle>();
-
         initialise_camera(world);
         initialise_paddles(world, sprite_sheet_handle);
     }
@@ -65,8 +63,8 @@ impl Component for Paddle {
     type Storage = DenseVecStorage<Self>;
 }
 
-const PADDLE_HEIGHT: f32 = 16.0;
-const PADDLE_WIDTH: f32 = 4.0;
+pub const PADDLE_HEIGHT: f32 = 16.0;
+pub const PADDLE_WIDTH: f32 = 4.0;
 
 fn initialise_paddles(world: &mut World, sprite_sheet_handle: SpriteSheetHandle) {
     let mut left_transform = Transform::default();
