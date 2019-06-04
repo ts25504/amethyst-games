@@ -1,5 +1,3 @@
-extern crate amethyst;
-
 use crate::pong::{Paddle, Side, ARENA_HEIGHT, PADDLE_HEIGHT};
 use amethyst::{
     core::transform::components::Transform,
