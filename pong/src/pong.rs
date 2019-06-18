@@ -1,12 +1,9 @@
 use amethyst::{
-    assets::{AssetStorage, Loader},
+    assets::{AssetStorage, Loader, Handle},
     core::transform::Transform,
     ecs::prelude::{Component, DenseVecStorage, Entity},
     prelude::*,
-    renderer::{
-        Camera, Flipped, PngFormat, Projection, SpriteRender, SpriteSheet,
-        SpriteSheetFormat, SpriteSheetHandle, Texture, TextureMetadata,
-    },
+    renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
     ui::{Anchor, TtfFormat, UiText, UiTransform},
 };
 
@@ -29,15 +26,11 @@ pub const ARENA_WIDTH: f32 = 100.0;
 
 fn initialise_camera(world: &mut World) {
     let mut transform = Transform::default();
-    transform.set_z(1.0);
+    transform.set_translation_xyz(ARENA_WIDTH * 0.5, ARENA_HEIGHT * 0.5, 1.0);
+
     world
         .create_entity()
-        .with(Camera::from(Projection::orthographic(
-            0.0,
-            ARENA_WIDTH,
-            0.0,
-            ARENA_HEIGHT,
-        )))
+        .with(Camera::standard_2d(ARENA_WIDTH, ARENA_HEIGHT))
         .with(transform)
         .build();
 }
@@ -71,13 +64,13 @@ impl Component for Paddle {
 pub const PADDLE_HEIGHT: f32 = 16.0;
 pub const PADDLE_WIDTH: f32 = 4.0;
 
-fn initialise_paddles(world: &mut World, sprite_sheet_handle: SpriteSheetHandle) {
+fn initialise_paddles(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
     let mut left_transform = Transform::default();
     let mut right_transform = Transform::default();
 
     let y = ARENA_HEIGHT / 2.0;
-    left_transform.set_xyz(PADDLE_WIDTH * 0.5, y, 0.0);
-    right_transform.set_xyz(ARENA_WIDTH - PADDLE_WIDTH * 0.5, y, 0.0);
+    left_transform.set_translation_xyz(PADDLE_WIDTH * 0.5, y, 0.0);
+    right_transform.set_translation_xyz(ARENA_WIDTH - PADDLE_WIDTH * 0.5, y, 0.0);
 
     let sprite_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle.clone(),
@@ -94,7 +87,6 @@ fn initialise_paddles(world: &mut World, sprite_sheet_handle: SpriteSheetHandle)
     world
         .create_entity()
         .with(sprite_render.clone())
-        .with(Flipped::Horizontal)
         .with(Paddle::new(Side::Right))
         .with(right_transform)
         .build();
@@ -122,9 +114,9 @@ impl Component for Ball {
     type Storage = DenseVecStorage<Self>;
 }
 
-fn initialise_ball(world: &mut World, sprite_sheet_handle: SpriteSheetHandle) {
+fn initialise_ball(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
     let mut local_transform = Transform::default();
-    local_transform.set_xyz(ARENA_WIDTH / 2.0, ARENA_HEIGHT / 2.0, 0.0);
+    local_transform.set_translation_xyz(ARENA_WIDTH / 2.0, ARENA_HEIGHT / 2.0, 0.0);
 
     let sprite_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle,
@@ -139,14 +131,13 @@ fn initialise_ball(world: &mut World, sprite_sheet_handle: SpriteSheetHandle) {
         .build();
 }
 
-fn load_sprite_sheet(world: &mut World) -> SpriteSheetHandle {
+fn load_sprite_sheet(world: &mut World) -> Handle<SpriteSheet> {
     let texture_handle = {
         let loader = world.read_resource::<Loader>();
         let texture_storage = world.read_resource::<AssetStorage<Texture>>();
         loader.load(
             "texture/pong_spritesheet.png",
-            PngFormat,
-            TextureMetadata::srgb_scale(),
+            ImageFormat::default(),
             (),
             &texture_storage,
         )
@@ -156,8 +147,7 @@ fn load_sprite_sheet(world: &mut World) -> SpriteSheetHandle {
     let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
     loader.load(
         "texture/pong_spritesheet.ron",
-        SpriteSheetFormat,
-        texture_handle,
+        SpriteSheetFormat(texture_handle),
         (),
         &sprite_sheet_store,
     )
@@ -178,7 +168,6 @@ fn initialise_scoreboard(world: &mut World) {
     let font = world.read_resource::<Loader>().load(
         "font/square.ttf",
         TtfFormat,
-        Default::default(),
         (),
         &world.read_resource(),
     );
@@ -186,22 +175,22 @@ fn initialise_scoreboard(world: &mut World) {
     let p1_transform = UiTransform::new(
         "P1".to_string(),
         Anchor::TopMiddle,
+        Anchor::TopMiddle,
         -50.,
         -50.,
         1.,
         200.,
         50.,
-        0,
     );
     let p2_transform = UiTransform::new(
         "P2".to_string(),
+        Anchor::TopMiddle,
         Anchor::TopMiddle,
         50.,
         -50.,
         1.,
         200.,
         50.,
-        0,
     );
 
     let p1_score = world
